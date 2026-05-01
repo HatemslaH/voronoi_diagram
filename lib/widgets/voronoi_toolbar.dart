@@ -9,11 +9,13 @@ class VoronoiToolbar extends StatelessWidget {
     required this.minPointsCount,
     required this.maxPointsCount,
     required this.isBusy,
+    required this.hueShiftDegrees,
     required this.onRefreshPressed,
     required this.onImportPressed,
     required this.onExportPressed,
     required this.onSliderChanged,
     required this.onSliderChangeEnd,
+    required this.onHueShiftChanged,
   });
 
   final String lastBuildTime;
@@ -22,51 +24,88 @@ class VoronoiToolbar extends StatelessWidget {
   final int minPointsCount;
   final int maxPointsCount;
   final bool isBusy;
+  final double hueShiftDegrees;
   final VoidCallback onRefreshPressed;
   final VoidCallback onImportPressed;
   final VoidCallback onExportPressed;
   final ValueChanged<double> onSliderChanged;
   final ValueChanged<double> onSliderChangeEnd;
+  final ValueChanged<double>? onHueShiftChanged;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (lastBuildTime.isNotEmpty)
-            Chip(avatar: const Icon(Icons.timer_outlined, size: 18), label: Text(lastBuildTime)),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            onPressed: isBusy ? null : onRefreshPressed,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
+          Row(
+            children: [
+              if (lastBuildTime.isNotEmpty)
+                Chip(
+                  avatar: const Icon(Icons.timer_outlined, size: 18),
+                  label: Text(lastBuildTime),
+                ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: isBusy ? null : onRefreshPressed,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: isBusy ? null : onImportPressed,
+                icon: const Icon(Icons.file_open),
+                label: const Text('Import'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: isBusy ? null : onExportPressed,
+                icon: const Icon(Icons.save_alt),
+                label: const Text('Export'),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Slider(
+                  value: sliderValue,
+                  min: minPointsCount.toDouble(),
+                  max: maxPointsCount.toDouble(),
+                  divisions: maxPointsCount - minPointsCount,
+                  onChanged: isBusy ? null : onSliderChanged,
+                  onChangeEnd: isBusy ? null : onSliderChangeEnd,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('Points: $pointsCount'),
+            ],
           ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            onPressed: isBusy ? null : onImportPressed,
-            icon: const Icon(Icons.file_open),
-            label: const Text('Import'),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.palette_outlined, size: 20),
+              const SizedBox(width: 8),
+              const Text('Оттенок'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Slider(
+                  value: hueShiftDegrees.clamp(0, 360),
+                  min: 0,
+                  max: 360,
+                  divisions: 360,
+                  label: '${hueShiftDegrees.round()}°',
+                  onChanged: onHueShiftChanged,
+                ),
+              ),
+              SizedBox(
+                width: 44,
+                child: Text(
+                  '${hueShiftDegrees.round()}°',
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            onPressed: isBusy ? null : onExportPressed,
-            icon: const Icon(Icons.save_alt),
-            label: const Text('Export'),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Slider(
-              value: sliderValue,
-              min: minPointsCount.toDouble(),
-              max: maxPointsCount.toDouble(),
-              divisions: maxPointsCount - minPointsCount,
-              onChanged: isBusy ? null : onSliderChanged,
-              onChangeEnd: isBusy ? null : onSliderChangeEnd,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text('Points: $pointsCount'),
         ],
       ),
     );

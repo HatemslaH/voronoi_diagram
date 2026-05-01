@@ -18,6 +18,7 @@ class VoronoiScreen extends StatefulWidget {
 class _VoronoiScreenState extends State<VoronoiScreen>
     with TickerProviderStateMixin {
   late final VoronoiController _controller;
+  double _hueShiftDegrees = 0;
 
   @override
   void initState() {
@@ -125,6 +126,7 @@ class _VoronoiScreenState extends State<VoronoiScreen>
             minPointsCount: VoronoiController.minPointsCount,
             maxPointsCount: VoronoiController.maxPointsCount,
             isBusy: _controller.isRendering,
+            hueShiftDegrees: _hueShiftDegrees,
             onRefreshPressed: () => unawaited(_onRefreshPressed()),
             onImportPressed: () => unawaited(_onImportPressed()),
             onExportPressed: () => unawaited(_onExportPressed()),
@@ -132,6 +134,11 @@ class _VoronoiScreenState extends State<VoronoiScreen>
                 _controller.updatePointsCountSelection(value.toInt()),
             onSliderChangeEnd: (value) =>
                 unawaited(_onPointsCountChangeEnd(value)),
+            onHueShiftChanged: image == null
+                ? null
+                : (value) => setState(() {
+                    _hueShiftDegrees = value.clamp(0.0, 360.0);
+                  }),
           ),
           Expanded(
             child: image == null
@@ -144,6 +151,7 @@ class _VoronoiScreenState extends State<VoronoiScreen>
                         voronoiImage: image,
                         points: _controller.displayedPoints,
                         morphProgress: _controller.morphProgress,
+                        hueShiftDegrees: _hueShiftDegrees,
                       ),
                     ),
                   ),

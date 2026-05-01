@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../models/diagram_point.dart';
+import '../utils/hue_shift.dart';
 
 class VoronoiCanvas extends StatelessWidget {
   const VoronoiCanvas({
@@ -11,12 +12,14 @@ class VoronoiCanvas extends StatelessWidget {
     required this.voronoiImage,
     required this.points,
     required this.morphProgress,
+    required this.hueShiftDegrees,
   });
 
   final Size canvasSize;
   final ui.Image voronoiImage;
   final List<DiagramPoint> points;
   final double morphProgress;
+  final double hueShiftDegrees;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +32,7 @@ class VoronoiCanvas extends StatelessWidget {
             points: points,
             voronoiImage: voronoiImage,
             morphProgress: morphProgress,
+            hueShiftDegrees: hueShiftDegrees,
           ),
         ),
       ),
@@ -41,15 +45,24 @@ class _VoronoiPainter extends CustomPainter {
     required this.points,
     required this.voronoiImage,
     required this.morphProgress,
+    required this.hueShiftDegrees,
   });
 
   final List<DiagramPoint> points;
   final ui.Image voronoiImage;
   final double morphProgress;
+  final double hueShiftDegrees;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawImage(voronoiImage, Offset.zero, Paint());
+    final imagePaint = Paint();
+    final normalizedHue = normalizeHueShiftDegrees(hueShiftDegrees);
+    if (normalizedHue != 0) {
+      imagePaint.colorFilter = ColorFilter.matrix(
+        hueRotationColorMatrix(normalizedHue),
+      );
+    }
+    canvas.drawImage(voronoiImage, Offset.zero, imagePaint);
 
     final pointPaint = Paint()
       ..color = Colors.white
@@ -69,6 +82,7 @@ class _VoronoiPainter extends CustomPainter {
   bool shouldRepaint(covariant _VoronoiPainter oldDelegate) {
     return oldDelegate.voronoiImage != voronoiImage ||
         oldDelegate.morphProgress != morphProgress ||
+        oldDelegate.hueShiftDegrees != hueShiftDegrees ||
         oldDelegate.points.length != points.length;
   }
 }
