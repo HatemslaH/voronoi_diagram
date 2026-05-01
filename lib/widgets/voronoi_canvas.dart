@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/diagram_point.dart';
 import '../utils/hue_shift.dart';
+import '../utils/point_visual_scale.dart';
 
 class VoronoiCanvas extends StatelessWidget {
   const VoronoiCanvas({
@@ -13,6 +14,7 @@ class VoronoiCanvas extends StatelessWidget {
     required this.points,
     required this.morphProgress,
     required this.hueShiftDegrees,
+    this.pointVisualScale = PointVisualScale.defaultValue,
   });
 
   final Size canvasSize;
@@ -20,6 +22,7 @@ class VoronoiCanvas extends StatelessWidget {
   final List<DiagramPoint> points;
   final double morphProgress;
   final double hueShiftDegrees;
+  final double pointVisualScale;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +36,7 @@ class VoronoiCanvas extends StatelessWidget {
             voronoiImage: voronoiImage,
             morphProgress: morphProgress,
             hueShiftDegrees: hueShiftDegrees,
+            pointVisualScale: pointVisualScale,
           ),
         ),
       ),
@@ -46,12 +50,14 @@ class _VoronoiPainter extends CustomPainter {
     required this.voronoiImage,
     required this.morphProgress,
     required this.hueShiftDegrees,
+    required this.pointVisualScale,
   });
 
   final List<DiagramPoint> points;
   final ui.Image voronoiImage;
   final double morphProgress;
   final double hueShiftDegrees;
+  final double pointVisualScale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -71,10 +77,11 @@ class _VoronoiPainter extends CustomPainter {
       ..color = Colors.black
       ..style = PaintingStyle.fill;
 
+    final scale = PointVisualScale.clamp(pointVisualScale);
     for (final point in points) {
       final center = Offset(point.x, point.y);
-      canvas.drawCircle(center, 6, borderPaint);
-      canvas.drawCircle(center, 4, pointPaint);
+      canvas.drawCircle(center, 6 * scale, borderPaint);
+      canvas.drawCircle(center, 4 * scale, pointPaint);
     }
   }
 
@@ -83,6 +90,7 @@ class _VoronoiPainter extends CustomPainter {
     return oldDelegate.voronoiImage != voronoiImage ||
         oldDelegate.morphProgress != morphProgress ||
         oldDelegate.hueShiftDegrees != hueShiftDegrees ||
+        oldDelegate.pointVisualScale != pointVisualScale ||
         oldDelegate.points.length != points.length;
   }
 }

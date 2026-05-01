@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/voronoi_controller.dart';
 import '../services/voronoi_file_codec.dart';
+import '../utils/point_visual_scale.dart';
 import '../widgets/voronoi_canvas.dart';
 import '../widgets/voronoi_toolbar.dart';
 
@@ -19,6 +20,7 @@ class _VoronoiScreenState extends State<VoronoiScreen>
     with TickerProviderStateMixin {
   late final VoronoiController _controller;
   double _hueShiftDegrees = 0;
+  double _pointVisualScale = PointVisualScale.defaultValue;
 
   @override
   void initState() {
@@ -127,6 +129,7 @@ class _VoronoiScreenState extends State<VoronoiScreen>
             maxPointsCount: VoronoiController.maxPointsCount,
             isBusy: _controller.isRendering,
             hueShiftDegrees: _hueShiftDegrees,
+            pointVisualScale: _pointVisualScale,
             onRefreshPressed: () => unawaited(_onRefreshPressed()),
             onImportPressed: () => unawaited(_onImportPressed()),
             onExportPressed: () => unawaited(_onExportPressed()),
@@ -138,6 +141,11 @@ class _VoronoiScreenState extends State<VoronoiScreen>
                 ? null
                 : (value) => setState(() {
                     _hueShiftDegrees = value.clamp(0.0, 360.0);
+                  }),
+            onPointVisualScaleChanged: image == null
+                ? null
+                : (value) => setState(() {
+                    _pointVisualScale = PointVisualScale.clamp(value);
                   }),
           ),
           Expanded(
@@ -152,6 +160,7 @@ class _VoronoiScreenState extends State<VoronoiScreen>
                         points: _controller.displayedPoints,
                         morphProgress: _controller.morphProgress,
                         hueShiftDegrees: _hueShiftDegrees,
+                        pointVisualScale: _pointVisualScale,
                       ),
                     ),
                   ),

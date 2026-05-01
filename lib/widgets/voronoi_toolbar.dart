@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/point_visual_scale.dart';
+
 class VoronoiToolbar extends StatelessWidget {
   const VoronoiToolbar({
     super.key,
@@ -10,12 +12,14 @@ class VoronoiToolbar extends StatelessWidget {
     required this.maxPointsCount,
     required this.isBusy,
     required this.hueShiftDegrees,
+    required this.pointVisualScale,
     required this.onRefreshPressed,
     required this.onImportPressed,
     required this.onExportPressed,
     required this.onSliderChanged,
     required this.onSliderChangeEnd,
     required this.onHueShiftChanged,
+    required this.onPointVisualScaleChanged,
   });
 
   final String lastBuildTime;
@@ -25,12 +29,14 @@ class VoronoiToolbar extends StatelessWidget {
   final int maxPointsCount;
   final bool isBusy;
   final double hueShiftDegrees;
+  final double pointVisualScale;
   final VoidCallback onRefreshPressed;
   final VoidCallback onImportPressed;
   final VoidCallback onExportPressed;
   final ValueChanged<double> onSliderChanged;
   final ValueChanged<double> onSliderChangeEnd;
   final ValueChanged<double>? onHueShiftChanged;
+  final ValueChanged<double>? onPointVisualScaleChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +107,32 @@ class VoronoiToolbar extends StatelessWidget {
                 width: 44,
                 child: Text(
                   '${hueShiftDegrees.round()}°',
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.blur_circular_outlined, size: 20),
+              const SizedBox(width: 8),
+              const Text('Размер точек'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Slider(
+                  value: PointVisualScale.clamp(pointVisualScale),
+                  min: PointVisualScale.min,
+                  max: PointVisualScale.max,
+                  divisions: 50,
+                  label: '${PointVisualScale.clamp(pointVisualScale).toStringAsFixed(2)}×',
+                  onChanged: onPointVisualScaleChanged,
+                ),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text(
+                  '${PointVisualScale.clamp(pointVisualScale).toStringAsFixed(2)}×',
                   textAlign: TextAlign.end,
                 ),
               ),
