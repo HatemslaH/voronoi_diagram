@@ -26,6 +26,7 @@ class Voronoi {
       final px = arena.allocate<Double>(sizeOf<Double>() * points.length);
       final py = arena.allocate<Double>(sizeOf<Double>() * points.length);
       final pc = arena.allocate<Uint32>(sizeOf<Uint32>() * points.length);
+
       for (var i = 0; i < points.length; i++) {
         px[i] = points[i].x;
         py[i] = points[i].y;
