@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+/* Преобразует цвет из формата ARGB (0xAARRGGBB) в ABGR для Flutter/Skia. */
 static uint32_t argb_to_abgr_pixel(uint32_t argb) {
   uint32_t a = (argb >> 24) & 0xFFu;
   uint32_t r = (argb >> 16) & 0xFFu;
@@ -64,11 +65,13 @@ typedef struct {
   size_t free_cap;
 } fortune_ctx_t;
 
+/* Обёртка над realloc: перевыделяет блок памяти заданного размера. */
 static void *xrealloc(void *p, size_t sz) {
   void *q = realloc(p, sz);
   return q;
 }
 
+/* Добавляет указатель в список объектов, которые будут освобождены при уничтожении контекста. */
 static void register_free(fortune_ctx_t *ctx, void *p) {
   if (p == NULL) {
     return;
@@ -85,6 +88,7 @@ static void register_free(fortune_ctx_t *ctx, void *p) {
   ctx->free_list[ctx->free_n++] = p;
 }
 
+/* Освобождает всю память контекста алгоритма Форчуна и обнуляет его поля. */
 static void fortune_ctx_destroy(fortune_ctx_t *ctx) {
   for (size_t i = 0; i < ctx->free_n; i++) {
     free(ctx->free_list[i]);
@@ -94,6 +98,7 @@ static void fortune_ctx_destroy(fortune_ctx_t *ctx) {
   *ctx = (fortune_ctx_t){0};
 }
 
+/* Возвращает 1, если событие a должно обрабатываться раньше b (меньше y, при равенстве — меньше x). */
 static int event_before(const event_t *a, const event_t *b) {
   if (a->y != b->y) {
     return a->y < b->y;
@@ -101,12 +106,14 @@ static int event_before(const event_t *a, const event_t *b) {
   return a->x < b->x;
 }
 
+/* Меняет местами два элемента в массиве кучи событий. */
 static void heap_swap(event_heap_t *h, size_t i, size_t j) {
   event_t *t = h->data[i];
   h->data[i] = h->data[j];
   h->data[j] = t;
 }
 
+/* Поднимает элемент вверх по минимальной куче, восстанавливая порядок приоритетов. */
 static void heap_sift_up(event_heap_t *h, size_t i) {
   while (i > 0) {
     size_t p = (i - 1) / 2;
@@ -118,6 +125,7 @@ static void heap_sift_up(event_heap_t *h, size_t i) {
   }
 }
 
+/* Опускает элемент вниз по минимальной куче, восстанавливая порядок приоритетов. */
 static void heap_sift_down(event_heap_t *h, size_t i) {
   for (;;) {
     size_t l = 2 * i + 1;
@@ -137,6 +145,7 @@ static void heap_sift_down(event_heap_t *h, size_t i) {
   }
 }
 
+/* Добавляет событие в минимальную кучу; возвращает 0 при ошибке выделения памяти. */
 static int heap_push(fortune_ctx_t *ctx, event_t *e) {
   event_heap_t *h = &ctx->heap;
   if (h->n >= h->cap) {
@@ -153,6 +162,7 @@ static int heap_push(fortune_ctx_t *ctx, event_t *e) {
   return 1;
 }
 
+/* Извлекает и возвращает событие с наивысшим приоритетом (минимальные y, затем x). */
 static event_t *heap_pop_min(fortune_ctx_t *ctx) {
   event_heap_t *h = &ctx->heap;
   if (h->n == 0) {
@@ -167,6 +177,7 @@ static event_t *heap_pop_min(fortune_ctx_t *ctx) {
   return root;
 }
 
+/* Создаёт новое полуребро диаграммы Вороного, принадлежащее указанному сайту. */
 static half_edge_t *new_half_edge(fortune_ctx_t *ctx, int site_index) {
   half_edge_t *he = calloc(1, sizeof *he);
   if (!he) {
@@ -178,6 +189,7 @@ static half_edge_t *new_half_edge(fortune_ctx_t *ctx, int site_index) {
   return he;
 }
 
+/* Создаёт новую дугу пляжной линии, соответствующую указанному сайту. */
 static arc_t *new_arc(fortune_ctx_t *ctx, int site_index) {
   arc_t *a = calloc(1, sizeof *a);
   if (!a) {
@@ -188,6 +200,7 @@ static arc_t *new_arc(fortune_ctx_t *ctx, int site_index) {
   return a;
 }
 
+/* Создаёт событие сайта — вставку новой точки при проходе заметающей прямой. */
 static event_t *new_event_site(fortune_ctx_t *ctx, double x, double y,
                                int site_index) {
   event_t *e = malloc(sizeof *e);
@@ -204,6 +217,7 @@ static event_t *new_event_site(fortune_ctx_t *ctx, double x, double y,
   return e;
 }
 
+/* Создаёт круговое событие — момент, когда дуга исчезает с пляжной линии. */
 static event_t *new_event_circle(fortune_ctx_t *ctx, double y, double x,
                                  arc_t *arc, vec2_t center, double radius) {
   event_t *e = malloc(sizeof *e);
@@ -223,6 +237,7 @@ static event_t *new_event_circle(fortune_ctx_t *ctx, double y, double x,
   return e;
 }
 
+/* Находит x-координату пересечения двух парабол (сайтов p и q) на высоте sweep_y. */
 static double parabola_intersect_x(vec2_t p, vec2_t q, double sweep_y) {
   if (fabs(p.y - sweep_y) < 1e-10 && fabs(q.y - sweep_y) < 1e-10) {
     return (p.x + q.x) / 2.0;
@@ -258,6 +273,7 @@ static double parabola_intersect_x(vec2_t p, vec2_t q, double sweep_y) {
   return fmin(x1, x2);
 }
 
+/* Возвращает x-координату точки излома между соседними дугами arc и arc->next. */
 static double breakpoint_x(const fortune_ctx_t *ctx, const arc_t *arc,
                            double sweep_y) {
   const vec2_t *p = &ctx->sites[arc->site_index];
@@ -267,6 +283,7 @@ static double breakpoint_x(const fortune_ctx_t *ctx, const arc_t *arc,
   return parabola_intersect_x(pv, qv, sweep_y);
 }
 
+/* Проверяет, попадает ли x-координата в горизонтальный интервал, занимаемый дугой. */
 static int arc_contains_x(const fortune_ctx_t *ctx, const arc_t *arc, double x,
                           double sweep_y) {
   double left_x = -DBL_MAX;
@@ -280,6 +297,7 @@ static int arc_contains_x(const fortune_ctx_t *ctx, const arc_t *arc, double x,
   return x >= left_x && x <= right_x;
 }
 
+/* Вычисляет центр описанной окружности трёх точек; возвращает 0, если точки коллинеарны. */
 static int circumcenter(vec2_t a, vec2_t b, vec2_t c, vec2_t *out) {
   double d = 2.0 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
   if (fabs(d) < 1e-10) {
@@ -298,6 +316,7 @@ static int circumcenter(vec2_t a, vec2_t b, vec2_t c, vec2_t *out) {
   return 1;
 }
 
+/* Помечает круговое событие дуги как недействительное (дуга изменилась или удалена). */
 static void invalidate_circle_event(arc_t *arc) {
   if (arc != NULL && arc->circle_event != NULL) {
     arc->circle_event->is_valid = 0;
@@ -305,11 +324,13 @@ static void invalidate_circle_event(arc_t *arc) {
   }
 }
 
+/* Заглушка для сохранения построенного ребра; в текущей реализации ничего не делает. */
 static void record_edge(fortune_ctx_t *ctx, half_edge_t *he) {
   (void)ctx;
   (void)he;
 }
 
+/* Обрезает луч (origin + t*(dx,dy)) по границам прямоугольника [0,width]×[0,height]. */
 static vec2_t clip_ray(double width, double height, vec2_t origin, double dx,
                        double dy) {
   double t = DBL_MAX;
@@ -334,6 +355,7 @@ static vec2_t clip_ray(double width, double height, vec2_t origin, double dx,
   return end;
 }
 
+/* Завершает построение неограниченного ребра, обрезая его по границам холста. */
 static void finish_edge(fortune_ctx_t *ctx, half_edge_t *he) {
   if (he->origin_valid && he->twin && he->twin->origin_valid) {
     record_edge(ctx, he);
@@ -362,6 +384,7 @@ static void finish_edge(fortune_ctx_t *ctx, half_edge_t *he) {
   record_edge(ctx, he);
 }
 
+/* Завершает все оставшиеся незакрытые рёбра на пляжной линии после окончания заметания. */
 static void finish_edges(fortune_ctx_t *ctx) {
   arc_t *arc = ctx->beach;
   while (arc != NULL && arc->next != NULL) {
@@ -373,6 +396,7 @@ static void finish_edges(fortune_ctx_t *ctx) {
   }
 }
 
+/* Проверяет тройку соседних дуг и, если возможно, планирует круговое событие. */
 static void check_circle_event(fortune_ctx_t *ctx, arc_t *arc) {
   if (arc->prev == NULL || arc->next == NULL) {
     return;
@@ -405,6 +429,7 @@ static void check_circle_event(fortune_ctx_t *ctx, arc_t *arc) {
   heap_push(ctx, ce);
 }
 
+/* Обрабатывает событие сайта: вставляет новую дугу на пляжную линию и создаёт рёбра. */
 static void handle_site_event(fortune_ctx_t *ctx, event_t *event) {
   int site_idx = event->site_index;
 
@@ -468,6 +493,7 @@ static void handle_site_event(fortune_ctx_t *ctx, event_t *event) {
   check_circle_event(ctx, arc2);
 }
 
+/* Обрабатывает круговое событие: удаляет дугу, фиксирует вершину и создаёт новое ребро. */
 static void handle_circle_event(fortune_ctx_t *ctx, event_t *event) {
   arc_t *arc = event->arc;
   vec2_t center = event->circle_center;
@@ -530,6 +556,7 @@ static void handle_circle_event(fortune_ctx_t *ctx, event_t *event) {
   check_circle_event(ctx, next);
 }
 
+/* Запускает алгоритм Форчуна: строит диаграмму Вороного заметающей прямой. */
 static int fortune_run(fortune_ctx_t *ctx, const double *site_xs,
                        const double *site_ys, size_t site_count) {
   ctx->sites = malloc(site_count * sizeof(vec2_t));
@@ -573,9 +600,13 @@ static int fortune_run(fortune_ctx_t *ctx, const double *site_xs,
   return 1;
 }
 
+/* Возвращает большее из двух целых чисел. */
 static int imax_int(int a, int b) { return a > b ? a : b; }
+
+/* Возвращает меньшее из двух целых чисел. */
 static int imin_int(int a, int b) { return a < b ? a : b; }
 
+/* Раскрашивает пиксели: для каждой точки холста находит ближайший сайт через пространственные корзины. */
 static int rasterise_bucket(const double *xs, const double *ys,
                             const uint32_t *colors, size_t n, uint32_t width,
                             uint32_t height, uint32_t *pixels) {
@@ -686,6 +717,7 @@ static int rasterise_bucket(const double *xs, const double *ys,
   return 1;
 }
 
+/* Выделяет буфер пикселей заданного размера для результата растеризации. */
 static pixels_t *allocate_pixel_buffer(uint32_t width, uint32_t height) {
   pixels_t *p = malloc(sizeof *p);
   if (!p) {
@@ -700,6 +732,7 @@ static pixels_t *allocate_pixel_buffer(uint32_t width, uint32_t height) {
   return p;
 }
 
+/* Точка входа FFI: строит диаграмму Вороного алгоритмом Форчуна и раскрашивает холст. */
 FFI_PLUGIN_EXPORT pixels_t *
 calculate_voronoi_fortune(uint32_t width, uint32_t height, double *points_x,
                           double *points_y, uint32_t *point_colors,
@@ -736,6 +769,7 @@ calculate_voronoi_fortune(uint32_t width, uint32_t height, double *points_x,
   return out;
 }
 
+/* Освобождает буфер пикселей, возвращённый calculate_voronoi_fortune. */
 FFI_PLUGIN_EXPORT void free_pixels(pixels_t *pixels) {
   if (pixels == NULL) {
     return;
